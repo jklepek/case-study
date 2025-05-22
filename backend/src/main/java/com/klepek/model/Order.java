@@ -7,9 +7,4 @@ public record Order(
         List<Product> products,
         OrderStatus status
 ) {
-    public Order(
-            List<Product> products
-    ) {
-        this(null, products, null);
-    }
 }

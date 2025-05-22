@@ -23,8 +23,13 @@ public class OrdersController {
         return orderService.createOrder(order);
     }
 
-    @DeleteMapping("/cancel/{id}")
-    public boolean cancelOrder(@PathVariable Long id) {
+    @PutMapping("/pay/{id}")
+    public Order payOrder(@PathVariable Long id) {
+        return orderService.payOrder(id);
+    }
+
+    @PutMapping("/cancel/{id}")
+    public Order cancelOrder(@PathVariable Long id) {
         return orderService.cancelOrder(id);
     }
 

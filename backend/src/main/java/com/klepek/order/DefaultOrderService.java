@@ -1,6 +1,7 @@
 package com.klepek.order;
 
 import com.klepek.exceptions.InsufficientStockException;
+import com.klepek.exceptions.OrderNotFoundException;
 import com.klepek.exceptions.ProductNotFoundException;
 import com.klepek.model.*;
 import com.klepek.repository.OrderItemsRepository;
@@ -36,14 +37,7 @@ public class DefaultOrderService implements OrderService {
     public Order getOrder(Long id) {
         StoredOrder storedOrder = ordersRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Order not found: " + id));
-        return new Order(storedOrder.getId(), storedOrder.getOrderItems()
-                .stream()
-                .map(orderItem -> new Product(
-                        orderItem.getProduct().getId(),
-                        orderItem.getProduct().getName(),
-                        orderItem.getQuantity(),
-                        orderItem.getProduct().getPricePerUnit()
-                )).collect(Collectors.toList()), storedOrder.getStatus());
+        return new Order(storedOrder.getId(), mapOrderItemsToProducts(storedOrder), storedOrder.getStatus());
     }
 
     @Override
@@ -76,45 +70,59 @@ public class DefaultOrderService implements OrderService {
         storedOrder.setTotalAmount(totalAmount);
         final StoredOrder savedOrder = ordersRepository.save(storedOrder);
 
-        return new Order(savedOrder.getId(), storedOrder.getOrderItems().stream()
-                .map(item -> new Product(
-                                item.getProduct().getId(),
-                                item.getProduct().getName(),
-                                item.getQuantity(),
-                                item.getProduct().getPricePerUnit()
-                        )
-                )
-                .toList(), savedOrder.getStatus()
+        return new Order(savedOrder.getId(), mapOrderItemsToProducts(storedOrder), savedOrder.getStatus()
         );
     }
 
     @Override
+    public Order payOrder(Long id) {
+        StoredOrder storedOrder = ordersRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + id));
+        if (storedOrder.getStatus() == OrderStatus.PAID) {
+            return new Order(storedOrder.getId(), mapOrderItemsToProducts(storedOrder), storedOrder.getStatus());
+        } else {
+            storedOrder.setStatus(OrderStatus.PAID);
+            StoredOrder paidOrder = ordersRepository.save(storedOrder);
+            return new Order(paidOrder.getId(), mapOrderItemsToProducts(paidOrder), paidOrder.getStatus());
+        }
+    }
+
+    @Override
     @Transactional
-    public boolean cancelOrder(Long id) {
-        StoredOrder order = ordersRepository.getReferenceById(id);
-        order.getOrderItems().stream().peek(orderItem -> {
+    public Order cancelOrder(Long id) {
+        StoredOrder order = ordersRepository.findById(id)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + id));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return new Order(order.getId(), mapOrderItemsToProducts(order), order.getStatus());
+        }
+
+        for (StoredOrderItem orderItem : order.getOrderItems()) {
             StoredProduct product = orderItem.getProduct();
             product.setStockQuantity(product.getStockQuantity() + orderItem.getQuantity());
             productsRepository.save(product);
-        }).forEach(orderItemsRepository::delete);
+        }
+
         order.setStatus(OrderStatus.CANCELLED);
-        ordersRepository.save(order);
-        return true;
+        StoredOrder cancelledOrder = ordersRepository.save(order);
+        return new Order(cancelledOrder.getId(), mapOrderItemsToProducts(cancelledOrder), cancelledOrder.getStatus());
     }
 
     @Override
     public List<Order> getAllOrders() {
         return ordersRepository.findAll().stream()
-                .map(storedOrder -> new Order(storedOrder.getId(), storedOrder.getOrderItems()
-                        .stream()
-                        .map(orderItem -> new Product(
-                                        orderItem.getProduct().getId(),
-                                        orderItem.getProduct().getName(),
-                                        orderItem.getQuantity(),
-                                        orderItem.getProduct().getPricePerUnit()
-                                )
-                        )
-                        .collect(Collectors.toList()), storedOrder.getStatus()))
+                .map(storedOrder -> new Order(storedOrder.getId(), mapOrderItemsToProducts(storedOrder), storedOrder.getStatus()))
                 .collect(Collectors.toList());
+    }
+
+    private List<Product> mapOrderItemsToProducts(StoredOrder order) {
+        return order.getOrderItems()
+                .stream()
+                .map(orderItem -> new Product(
+                        orderItem.getProduct().getId(),
+                        orderItem.getProduct().getName(),
+                        orderItem.getQuantity(),
+                        orderItem.getProduct().getPricePerUnit()
+                )).toList();
     }
 }

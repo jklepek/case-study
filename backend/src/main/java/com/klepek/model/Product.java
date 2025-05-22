@@ -9,6 +9,7 @@ public record Product(
         BigDecimal pricePerUnit
 ) {
 
+    // for creating new StoredProduct (no ID yet)
     public Product(
             String name,
             Integer quantity,
@@ -17,6 +18,7 @@ public record Product(
         this(null, name, quantity, pricePerUnit);
     }
 
+    // for creating new Orders (only ID and quantity)
     public Product(
             Long id,
             Integer quantity

@@ -10,7 +10,9 @@ public interface OrderService {
 
     Order createOrder(Order order);
 
-    boolean cancelOrder(Long id);
+    Order payOrder(Long id);
+
+    Order cancelOrder(Long id);
 
     List<Order> getAllOrders();
 }
