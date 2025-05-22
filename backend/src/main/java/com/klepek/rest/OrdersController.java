@@ -18,17 +18,17 @@ public class OrdersController {
         this.orderService = orderService;
     }
 
-    @PostMapping("/create")
+    @PostMapping("/")
     public Order createOrder(@RequestBody Order order) {
         return orderService.createOrder(order);
     }
 
-    @PutMapping("/pay/{id}")
+    @PutMapping("/{id}/pay")
     public Order payOrder(@PathVariable Long id) {
         return orderService.payOrder(id);
     }
 
-    @PutMapping("/cancel/{id}")
+    @PutMapping("/{id}/cancel")
     public Order cancelOrder(@PathVariable Long id) {
         return orderService.cancelOrder(id);
     }

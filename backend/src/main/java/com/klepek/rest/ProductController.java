@@ -18,27 +18,27 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @PostMapping("/create")
+    @PostMapping("/")
     public ResponseEntity<Product> create(@RequestBody Product product) {
         return new ResponseEntity<>(productService.createProduct(product), HttpStatus.CREATED);
     }
 
-    @PutMapping("/update")
+    @PutMapping("/{id}")
     public ResponseEntity<Product> update(@RequestBody Product product) {
         return new ResponseEntity<>(productService.updateProduct(product), HttpStatus.OK);
     }
 
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = productService.deleteProduct(id);
         if (deleted) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
-    @GetMapping("/all")
+    @GetMapping("/")
     public ResponseEntity<List<Product>> getAll() {
         return new ResponseEntity<>(productService.getAllProducts(), HttpStatus.OK);
     }
