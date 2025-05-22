@@ -1,6 +1,9 @@
 package com.klepek.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
@@ -11,12 +14,17 @@ public class StoredProduct {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Product name is required")
     @Column(nullable = false)
     private String name;
 
+    @NotNull(message = "Stock quantity is required")
+    @Min(value = 0, message = "Stock quantity must be non-negative")
     @Column(nullable = false)
     private Integer stockQuantity;
 
+    @NotNull(message = "Price per unit is required")
+    @Min(value = 0, message = "Price per unit must be non-negative")
     @Column(nullable = false)
     private BigDecimal pricePerUnit;
 

@@ -2,12 +2,14 @@ package com.klepek.order;
 
 import com.klepek.exceptions.InsufficientStockException;
 import com.klepek.exceptions.OrderNotFoundException;
+import com.klepek.exceptions.OrderExpiredException;
 import com.klepek.exceptions.ProductNotFoundException;
 import com.klepek.model.*;
 import com.klepek.repository.OrderItemsRepository;
 import com.klepek.repository.OrdersRepository;
 import com.klepek.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,7 +53,7 @@ public class DefaultOrderService implements OrderService {
                             .orElseThrow(() -> new ProductNotFoundException("Product not found: " + product.id()));
 
                     if (storedProduct.getStockQuantity() < product.quantity()) {
-                        throw new InsufficientStockException("Insufficient stock for product: " + product.name());
+                        throw new InsufficientStockException("Insufficient stock for product: " + storedProduct.getName());
                     }
 
                     storedProduct.setStockQuantity(storedProduct.getStockQuantity() - product.quantity());
@@ -70,14 +72,19 @@ public class DefaultOrderService implements OrderService {
         storedOrder.setTotalAmount(totalAmount);
         final StoredOrder savedOrder = ordersRepository.save(storedOrder);
 
-        return new Order(savedOrder.getId(), mapOrderItemsToProducts(storedOrder), savedOrder.getStatus()
-        );
+        return new Order(savedOrder.getId(), mapOrderItemsToProducts(storedOrder), savedOrder.getStatus());
     }
 
     @Override
+    @Transactional
     public Order payOrder(Long id) {
         StoredOrder storedOrder = ordersRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + id));
+
+        if (storedOrder.isExpired()) {
+            throw new OrderExpiredException("Order has expired: " + id);
+        }
+
         if (storedOrder.getStatus() == OrderStatus.PAID) {
             return new Order(storedOrder.getId(), mapOrderItemsToProducts(storedOrder), storedOrder.getStatus());
         } else {
@@ -112,7 +119,19 @@ public class DefaultOrderService implements OrderService {
     public List<Order> getAllOrders() {
         return ordersRepository.findAll().stream()
                 .map(storedOrder -> new Order(storedOrder.getId(), mapOrderItemsToProducts(storedOrder), storedOrder.getStatus()))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void checkExpiredOrders() {
+        List<StoredOrder> expiredOrders = ordersRepository.findAll().stream()
+                .filter(order -> order.getStatus() == OrderStatus.CREATED && order.isExpired())
+                .toList();
+
+        for (StoredOrder order : expiredOrders) {
+            cancelOrder(order.getId());
+        }
     }
 
     private List<Product> mapOrderItemsToProducts(StoredOrder order) {
