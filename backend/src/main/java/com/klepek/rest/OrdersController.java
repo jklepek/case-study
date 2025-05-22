@@ -38,7 +38,7 @@ public class OrdersController {
         return orderService.getOrder(id);
     }
 
-    @GetMapping("/all")
+    @GetMapping("/")
     public List<Order> getAllOrders() {
         return orderService.getAllOrders();
     }
