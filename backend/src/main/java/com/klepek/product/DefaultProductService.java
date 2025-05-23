@@ -2,7 +2,9 @@ package com.klepek.product;
 
 import com.klepek.model.Product;
 import com.klepek.model.StoredProduct;
+import com.klepek.model.OrderStatus;
 import com.klepek.repository.ProductRepository;
+import com.klepek.repository.OrderItemsRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,9 +13,11 @@ import java.util.List;
 public class DefaultProductService implements ProductService {
 
     private final ProductRepository productRepository;
+    private final OrderItemsRepository orderItemsRepository;
 
-    public DefaultProductService(ProductRepository productRepository) {
+    public DefaultProductService(ProductRepository productRepository, OrderItemsRepository orderItemsRepository) {
         this.productRepository = productRepository;
+        this.orderItemsRepository = orderItemsRepository;
     }
 
     @Override
@@ -50,6 +54,12 @@ public class DefaultProductService implements ProductService {
 
     @Override
     public boolean deleteProduct(Long id) {
+        boolean hasActiveOrders = orderItemsRepository.existsByProductIdAndOrderStatusNot(id, OrderStatus.CANCELLED);
+
+        if (hasActiveOrders) {
+            throw new IllegalStateException("Product has active orders and cannot be deleted");
+        }
+
         if (productRepository.existsById(id)) {
             productRepository.deleteById(id);
             return true;

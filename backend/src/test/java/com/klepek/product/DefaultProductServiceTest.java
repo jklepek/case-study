@@ -2,7 +2,10 @@ package com.klepek.product;
 
 import com.klepek.model.Product;
 import com.klepek.model.StoredProduct;
+import com.klepek.model.StoredOrder;
+import com.klepek.model.StoredOrderItem;
 import com.klepek.repository.ProductRepository;
+import com.klepek.repository.OrderItemsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,11 +32,14 @@ class DefaultProductServiceTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private OrderItemsRepository orderItemsRepository;
+
     private DefaultProductService productService;
 
     @BeforeEach
     void setUp() {
-        productService = new DefaultProductService(productRepository);
+        productService = new DefaultProductService(productRepository, orderItemsRepository);
     }
 
     @Test
@@ -120,5 +127,33 @@ class DefaultProductServiceTest {
         boolean result = productService.deleteProduct(999L);
 
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void deleteProduct_WhenProductHasActiveOrders_ShouldReturnFalse() {
+        StoredProduct product = new StoredProduct("Test Product", 10, new BigDecimal("99.99"));
+        entityManager.persist(product);
+
+        StoredOrder order = new StoredOrder();
+        order.setStatus(com.klepek.model.OrderStatus.CREATED);
+
+        StoredOrderItem orderItem = new StoredOrderItem(order, product, 5);
+        orderItem.setTotalPrice(new BigDecimal("499.95"));
+
+        List<StoredOrderItem> orderItems = new ArrayList<>();
+        orderItems.add(orderItem);
+        order.setOrderItems(orderItems);
+        order.setTotalAmount(new BigDecimal("499.95"));
+
+        entityManager.persist(order);
+        entityManager.persist(orderItem);
+
+        entityManager.flush();
+
+        assertThatThrownBy(() -> productService.deleteProduct(product.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Product has active orders and cannot be deleted");
+
+        assertThat(entityManager.find(StoredProduct.class, product.getId())).isNotNull();
     }
 } 
