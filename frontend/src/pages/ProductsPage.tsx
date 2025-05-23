@@ -7,7 +7,8 @@ import {
     DialogTitle,
     DialogContent,
     Snackbar,
-    Alert
+    Alert,
+    Box
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -85,52 +86,67 @@ export const ProductsPage: React.FC = () => {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-                Správa produktů
-            </Typography>
+        <Box sx={{ 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            minHeight: '100vh',
+            bgcolor: 'background.default'
+        }}>
+            <Container maxWidth="lg" sx={{ 
+                py: 4,
+                display: 'flex',
+                flexDirection: 'column',
+            }}>
+                <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center' }}>
+                    Správa produktů
+                </Typography>
 
-            <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setIsDialogOpen(true)}
-                sx={{ mb: 2 }}
-            >
-                Přidat produkt
-            </Button>
+                <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsDialogOpen(true)}
+                    sx={{ mb: 2 }}
+                >
+                    Přidat produkt
+                </Button>
 
-            {isLoading ? (
-                <Typography>Načítání...</Typography>
-            ) : (
-                <ProductList
-                    products={products}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-            )}
+                {isLoading ? (
+                    <Typography sx={{ textAlign: 'center' }}>Načítání...</Typography>
+                ) : (
+                    <Box sx={{ width: '100%' }}>
+                        <ProductList
+                            products={products}
+                            onEdit={handleEdit}
+                            onDelete={handleDelete}
+                        />
+                    </Box>
+                )}
 
-            <Dialog open={isDialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                <DialogTitle>
-                    {selectedProduct ? 'Upravit produkt' : 'Nový produkt'}
-                </DialogTitle>
-                <DialogContent>
-                    <ProductForm
-                        initialData={selectedProduct}
-                        onSubmit={handleSubmit}
-                        error={error}
-                    />
-                </DialogContent>
-            </Dialog>
+                <Dialog open={isDialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+                    <DialogTitle>
+                        {selectedProduct ? 'Upravit produkt' : 'Nový produkt'}
+                    </DialogTitle>
+                    <DialogContent>
+                        <ProductForm
+                            initialData={selectedProduct}
+                            onSubmit={handleSubmit}
+                            error={error}
+                        />
+                    </DialogContent>
+                </Dialog>
 
-            <Snackbar
-                open={!!error}
-                autoHideDuration={6000}
-                onClose={() => setError(undefined)}
-            >
-                <Alert severity="error" onClose={() => setError(undefined)}>
-                    {error}
-                </Alert>
-            </Snackbar>
-        </Container>
+                <Snackbar
+                    open={!!error}
+                    autoHideDuration={6000}
+                    onClose={() => setError(undefined)}
+                >
+                    <Alert severity="error" onClose={() => setError(undefined)}>
+                        {error}
+                    </Alert>
+                </Snackbar>
+            </Container>
+        </Box>
     );
 }; 

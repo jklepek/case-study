@@ -33,6 +33,7 @@ export const ProductList: React.FC<ProductListProps> = ({ products, onEdit, onDe
             <Table>
                 <TableHead>
                     <TableRow>
+                        <TableCell>Id</TableCell>
                         <TableCell>Název</TableCell>
                         <TableCell align="right">Množství na skladě</TableCell>
                         <TableCell align="right">Cena za kus</TableCell>
@@ -42,6 +43,7 @@ export const ProductList: React.FC<ProductListProps> = ({ products, onEdit, onDe
                 <TableBody>
                     {products.map((product) => (
                         <TableRow key={product.id}>
+                            <TableCell>{product.id}</TableCell>
                             <TableCell>{product.name}</TableCell>
                             <TableCell align="right">{product.quantity}</TableCell>
                             <TableCell align="right">{product.pricePerUnit} Kč</TableCell>
